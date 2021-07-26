@@ -10,7 +10,7 @@
 typedef int Status;
 typedef int ElemType;
 
-/* 采用单链表存储结构实现单链表(带头结点) */
+/* 采用单链表存储结构实现单链表(带头结点, 且用头结点存储表长) */
 typedef struct Node
 {
     ElemType data;
@@ -18,72 +18,181 @@ typedef struct Node
 } Node, *LinkList;
 
 /* 操作函数原型 */
+void Display(LinkList);
 Status CreateList_L(LinkList &, int); // 第二个参数是初始化时要创建的结点数目
 Status DestroyList_L(LinkList &);
 Status InsertNode_L(LinkList &, int, ElemType); // 第二个参数是指定节点插入后其位序
 Status DeleteNode_L(LinkList &, int);           // 第二个参数是要删除结点的位序
-int LocateNode_L(ElemType);                     // 找出指定结点的位序
-Status FindNode_L(int);                         // 找出指定位序的结点
-int Length_L(LinkList);
-Status isEmpty_L(LinkList);
-Status Merge_L(LinkList &, LinkList); // 要合并的两个链表都必须是非递减的，第二个链表合并到第一个链表
+int LocateNode_L(LinkList, ElemType);           // 找出指定结点的位序
+Status FindNode_L(LinkList, int);               // 找出指定位序的结点
+Status Merge_L(LinkList &, LinkList);           // 要合并的两个链表都必须是非递减的，第二个链表合并到第一个链表
 
 int main(void)
 {
     LinkList foo, bar;
     CreateList_L(foo, 10);
 
-    Length_L(foo);
     DeleteNode_L(foo, 5);
-    InsertNode_L(foo, 5, 5);
-    InsertNode_L(foo, 10, 10);
-    Length_L(foo);
+    InsertNode_L(foo, 5, 50);
 
-    LocateNode_L(5);
-    FindNode_L(7);
+    printf("%d\n", LocateNode_L(foo, 100));
+    // FindNode_L(7);
 
-    isEmpty_L(foo);
-    for (int i = 0; i < Length_L(foo); i++)
+    int listLength = foo->data;
+    for (int i = 0; i < listLength; i++)
     {
-        DeleteNode_L(foo, i + 1);
+        DeleteNode_L(foo, foo->data);
     }
-    isEmpty_L(foo);
 
     DestroyList_L(foo);
 
-    printf("请确保接下来的两个链表是非递减的！\n");
-    CreateList_L(foo, 10);
-    CreateList_L(bar, 5);
-    Merge_L(foo, bar);
+    // printf("请确保接下来的两个链表是非递减的！\n");
+    // CreateList_L(foo, 10);
+    // CreateList_L(bar, 5);
+    // Merge_L(foo, bar);
 
-    DestroyList_L(foo);
-    DestroyList_L(bar);
+    // DestroyList_L(foo);
+    // DestroyList_L(bar);
 
     return 0;
 }
 
 /* 操作函数的实现 */
+void Display(LinkList list)
+{
+    for (Node *p = list; p; p = p->next)
+    {
+        printf("%d\t", p->data);
+    }
+    printf("\n");
+}
+
 Status CreateList_L(LinkList &list, int n)
 {
-    Node *p;
+    Node *p, *q; // q 结点是 p 结点的前驱
 
     // 创建头结点
     list = (Node *)malloc(sizeof(Node));
     list->data = 0; // 头结点的数据域用于存储表长
     list->next = NULL;
 
+    q = list;
     for (int i = 0; i < n; i++)
     {
         p = (Node *)malloc(sizeof(Node));
         if (!p)
         {
-            printf("INFEASIBLE: 没有足够的存储空间用于创建新结点了！\n");
+            printf("Infeasible: There're not enough spaces for new node！\n");
             return INFEASIBLE;
         }
+        list->data++;
         scanf("%d", &p->data);
-        p->next = list->next;
-        list->next = p;
+        p->next = q->next;
+        q->next = p;
+        q = q->next;
     }
 
+    Display(list);
+
     return OK;
+}
+
+Status DestroyList_L(LinkList &list)
+{
+    Node *p, *q;
+    p = list;
+
+    for (int i = 0; i < list->data; i++) // list->data是链表的长度
+    {
+        q = p->next;
+        free(p);
+        p = q;
+    }
+    printf("INFO: Link list has been destroyed!");
+    return OK;
+}
+
+Status InsertNode_L(LinkList &list, int i, ElemType e)
+{
+    Node *p, *q;
+    int j; // p 指向第 j 个结点
+    p = list;
+    j = 0;
+
+    while (p && j < i - 1)
+    {
+        p = p->next;
+        j++;
+    }
+    if (!p || j > i - 1)
+    {
+        return ERRO;
+    }
+
+    q = (Node *)malloc(sizeof(Node));
+    if (!q)
+    {
+        printf("Infeasible: There're not enough spaces for new node！\n");
+        return INFEASIBLE;
+    }
+    q->data = e;
+    q->next = p->next;
+    p->next = q;
+    list->data++;
+
+    Display(list);
+
+    return OK;
+}
+
+Status DeleteNode_L(LinkList &list, int i)
+{
+    Node *p, *q;
+    int j; // p 指向第 j 个结点
+    p = list;
+    j = 0;
+
+    while (p && j < i - 1)
+    {
+        p = p->next;
+        j++;
+    }
+    if (!p || j > i - 1)
+    {
+        return ERRO;
+    }
+
+    q = p->next;
+    p->next = q->next;
+    free(q);
+    list->data--;
+
+    Display(list);
+
+    return OK;
+}
+
+int LocateNode_L(LinkList list, ElemType e)
+{
+    Node *p;
+    int i;
+    p = list->next;
+    i = 1;
+
+    while (p)
+    {
+        if (p->data == e)
+        {
+            break;
+        }
+        p = p->next;
+        i++;
+    }
+
+    if (!p)
+    {
+        return ERRO;
+    }
+
+    return i;
 }
